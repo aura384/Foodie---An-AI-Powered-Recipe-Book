@@ -42,7 +42,7 @@ export default function ReyChat() {
     setLoading(true);
 
     try {
-      const response = await fetch(API_BASE, {
+      const response = await fetch(`${API_BASE}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
