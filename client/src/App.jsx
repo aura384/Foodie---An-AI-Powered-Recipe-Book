@@ -76,7 +76,7 @@ function Modal({ mealStub, onClose }) {
     setLoadingDetail(true);
     setDetailError(null);
     setMeal(null);
-    fetch(`${API_BASE}/meals/${mealStub.idMeal}`)
+    fetch(`${API_BASE}/api/meals/${mealStub.idMeal}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.meal) setMeal(d.meal);
