@@ -22,7 +22,10 @@ export default function AuthPage({ onLogin }) {
     setLoading(true);
     setError(null);
     try {
-      const endpoint = mode === "login" ? "/login" : "/register";
+      const endpoint =
+  mode === "login"
+    ? "/api/auth/login"
+    : "/api/auth/register";
       const body = mode === "login"
         ? { email: form.email, password: form.password }
         : { name: form.name, email: form.email, password: form.password };
