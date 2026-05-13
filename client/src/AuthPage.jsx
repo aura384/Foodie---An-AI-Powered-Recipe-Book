@@ -4,7 +4,7 @@ import girlImg from "./login.png";
 import logoImg from "./foodie.png";
 import foodshowerImg from "./foodshower.png";
 
-const API_BASE = process.env.REACT_APP_API_URL;
+const API_BASE = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
 export default function AuthPage({ onLogin }) {
   const [mode, setMode] = useState("login");
@@ -22,10 +22,7 @@ export default function AuthPage({ onLogin }) {
     setLoading(true);
     setError(null);
     try {
-      const endpoint =
-      mode === "login"
-        ? "/api/auth/login"
-        : "/api/auth/register";
+      const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/register";
       const body = mode === "login"
         ? { email: form.email, password: form.password }
         : { name: form.name, email: form.email, password: form.password };

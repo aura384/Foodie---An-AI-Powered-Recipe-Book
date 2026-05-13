@@ -6,7 +6,7 @@ import ReyChat from "./ReyChat";
 import AuthPage from "./AuthPage";
 
 const CATEGORIES = ["All", "Beef", "Chicken", "Seafood", "Vegetarian", "Pasta", "Dessert", "Breakfast", "Lamb"];
-const API_BASE = process.env.REACT_APP_API_URL;
+const API_BASE = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
 function useDebounce(value, delay) {
   const [debounced, setDebounced] = useState(value);
@@ -224,7 +224,7 @@ export default function App() {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const data = await fetch(`${API_BASE}/meals`).then((r) => r.json());
+        const data = await fetch(`${API_BASE}/api/meals`).then((r) => r.json());
         setAllRecipes(data.meals);
         setRecipes(data.meals);
       } catch {
@@ -234,7 +234,7 @@ export default function App() {
       }
     };
     fetchAll();
-    fetch(`${API_BASE}/meals/random`)
+    fetch(`${API_BASE}/api/meals/random`)
       .then((r) => r.json())
       .then((d) => d.meal && setRandom(d.meal))
       .catch(() => {});
