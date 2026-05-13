@@ -2,7 +2,7 @@
 
 Foodie is an AI powered recipe book application designed to help users explore cuisines from different parts of the world through an interactive and aesthetic experience. The platform combines recipe discovery with conversational AI to create a space where cooking feels engaging, accessible, and creative.
 
-***Explore me [here](https://foodie-an-ai-powered-recipe-book.vercel.app/)***
+***Explore me [here](https://foodie-an-ai-powered-recipe-book.vercel.app/)!***
 
 Users can sign up or log in to access the platform and browse recipes inspired by global cuisines. Alongside recipe exploration, Foodie introduces Rey, an AI assistant integrated into the application to help users with cooking doubts, recipe understanding, ingredient questions, and general food related guidance.
 
