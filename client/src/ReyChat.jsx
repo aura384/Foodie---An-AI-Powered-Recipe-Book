@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import "./ReyChat.css";
 import reyImg from "./rey.png";
 
-const API_BASE = "http://localhost:3001/api/chat";
+const API_BASE = process.env.REACT_APP_API_URL;
 
 export default function ReyChat() {
   const [open, setOpen] = useState(false);

@@ -4,7 +4,7 @@ import girlImg from "./login.png";
 import logoImg from "./foodie.png";
 import foodshowerImg from "./foodshower.png";
 
-const API_BASE = "http://localhost:3001/api/auth";
+const API_BASE = process.env.REACT_APP_API_URL;
 
 export default function AuthPage({ onLogin }) {
   const [mode, setMode] = useState("login");

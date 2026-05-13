@@ -6,7 +6,7 @@ import ReyChat from "./ReyChat";
 import AuthPage from "./AuthPage";
 
 const CATEGORIES = ["All", "Beef", "Chicken", "Seafood", "Vegetarian", "Pasta", "Dessert", "Breakfast", "Lamb"];
-const API_BASE = "http://localhost:3001/api";
+const API_BASE = process.env.REACT_APP_API_URL;
 
 function useDebounce(value, delay) {
   const [debounced, setDebounced] = useState(value);
