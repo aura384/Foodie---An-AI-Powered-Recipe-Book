@@ -6,6 +6,9 @@ import authRouter from "../routes/auth.js";
 import mealsRouter from "../routes/meals.js";
 import chatRouter from "../routes/chat.js";
 
+import dotenv from "dotenv";
+dotenv.config({ path: "../.env" });
+
 const app = express();
 
 app.use(cors());
