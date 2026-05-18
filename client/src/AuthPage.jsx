@@ -6,8 +6,8 @@ import foodshowerImg from "./foodshower.png";
 
 const API_BASE = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
-export default function AuthPage({ onLogin }) {
-  const [mode, setMode] = useState("login");
+export default function AuthPage({ onLogin, initialMode = "login", onBack }) {
+  const [mode, setMode] = useState(initialMode);
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -48,7 +48,6 @@ export default function AuthPage({ onLogin }) {
 
   return (
     <div className="auth-page">
-      {/* two copies stacked vertically so the scroll loops seamlessly */}
       <div className="auth-bg">
         <img src={foodshowerImg} alt="" className="bg-img" />
         <img src={foodshowerImg} alt="" className="bg-img" />
@@ -56,6 +55,12 @@ export default function AuthPage({ onLogin }) {
       <div className="bg-overlay" />
 
       <div className="auth-card">
+        {onBack && (
+          <button className="auth-back-btn" onClick={onBack}>
+            ← Back to recipes
+          </button>
+        )}
+
         <div className="auth-brand">
           <img src={girlImg} alt="Foodie" className="auth-mascot" />
           <img src={logoImg} alt="Foodie" className="auth-logo" />

@@ -29,6 +29,36 @@ function getIngredients(meal) {
   return ingredients;
 }
 
+/* ── Auth Prompt Modal ── */
+function AuthPrompt({ onClose, onGoAuth }) {
+  useEffect(() => {
+    const handler = (e) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return (
+    <div className="overlay auth-prompt-overlay" onClick={onClose}>
+      <div className="auth-prompt-card" onClick={(e) => e.stopPropagation()}>
+        <button className="close-btn" onClick={onClose}>✕</button>
+        <div className="auth-prompt-icon">🤍</div>
+        <h3 className="auth-prompt-title">Save your favourites!</h3>
+        <p className="auth-prompt-body">
+          Sign in or create a free account to save and revisit your favourite recipes anytime.
+        </p>
+        <div className="auth-prompt-actions">
+          <button className="auth-prompt-signin" onClick={() => { onGoAuth("login"); onClose(); }}>
+            Sign In
+          </button>
+          <button className="auth-prompt-signup" onClick={() => { onGoAuth("register"); onClose(); }}>
+            Create Account
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Hero({ onBrowse }) {
   return (
     <section className="hero">
@@ -66,7 +96,7 @@ function Hero({ onBrowse }) {
   );
 }
 
-function Modal({ mealStub, onClose }) {
+function Modal({ mealStub, onClose, user, favourites, onToggleFavourite, onNeedAuth }) {
   const [meal, setMeal] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(true);
   const [detailError, setDetailError] = useState(null);
@@ -92,6 +122,14 @@ function Modal({ mealStub, onClose }) {
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
+  const isFav = favourites.has(mealStub?.idMeal);
+
+  const handleFav = (e) => {
+    e.stopPropagation();
+    if (!user) { onNeedAuth(); return; }
+    onToggleFavourite(mealStub.idMeal);
+  };
+
   const ingredients = meal ? getIngredients(meal) : [];
   const steps = meal?.strInstructions
     ?.split(/\r?\n/)
@@ -106,6 +144,13 @@ function Modal({ mealStub, onClose }) {
     <div className="overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <button className="close-btn" onClick={onClose}>✕</button>
+        <button
+          className={`modal-fav-btn${isFav ? " active" : ""}`}
+          onClick={handleFav}
+          title={isFav ? "Remove from favourites" : "Add to favourites"}
+        >
+          {isFav ? "♥" : "♡"}
+        </button>
         <div className="modal-hero">
           <img src={heroThumb} alt={heroTitle} className="modal-hero-img" />
           <div className="modal-hero-overlay">
@@ -173,7 +218,15 @@ function Modal({ mealStub, onClose }) {
   );
 }
 
-function RecipeCard({ meal, onClick, index }) {
+function RecipeCard({ meal, onClick, index, user, favourites, onToggleFavourite, onNeedAuth }) {
+  const isFav = favourites.has(meal.idMeal);
+
+  const handleFav = (e) => {
+    e.stopPropagation();
+    if (!user) { onNeedAuth(); return; }
+    onToggleFavourite(meal.idMeal);
+  };
+
   return (
     <div
       className="card"
@@ -186,6 +239,13 @@ function RecipeCard({ meal, onClick, index }) {
           <span className="view-btn">View Recipe</span>
         </div>
         <span className="card-badge">{meal.strCategory}</span>
+        <button
+          className={`card-fav-btn${isFav ? " active" : ""}`}
+          onClick={handleFav}
+          title={isFav ? "Remove from favourites" : "Add to favourites"}
+        >
+          {isFav ? "♥" : "♡"}
+        </button>
       </div>
       <div className="card-body">
         <h3 className="card-title">{meal.strMeal}</h3>
@@ -201,6 +261,10 @@ export default function App() {
     return stored ? JSON.parse(stored) : null;
   });
 
+  // null = main app, "login" or "register" = auth page
+  const [authMode, setAuthMode] = useState(null);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+
   const [inputVal, setInputVal] = useState("");
   const [category, setCategory] = useState("All");
   const [allRecipes, setAllRecipes] = useState([]);
@@ -210,17 +274,42 @@ export default function App() {
   const [error, setError] = useState(null);
   const [random, setRandom] = useState(null);
 
+  // Favourites: Set of meal IDs
+  const [favourites, setFavourites] = useState(() => {
+    try {
+      const stored = localStorage.getItem("foodie_favourites");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
+  const [showFavouritesOnly, setShowFavouritesOnly] = useState(false);
+
   const gridRef = useRef(null);
   const debouncedQuery = useDebounce(inputVal, 350);
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+    setAuthMode(null);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("foodie_token");
     localStorage.removeItem("foodie_user");
     setUser(null);
+    setShowFavouritesOnly(false);
   };
 
+  const handleToggleFavourite = (mealId) => {
+    setFavourites((prev) => {
+      const next = new Set(prev);
+      if (next.has(mealId)) next.delete(mealId);
+      else next.add(mealId);
+      localStorage.setItem("foodie_favourites", JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  // Always load recipes (no auth gate)
   useEffect(() => {
-    if (!user) return;
     const fetchAll = async () => {
       setLoading(true);
       try {
@@ -238,17 +327,18 @@ export default function App() {
       .then((r) => r.json())
       .then((d) => d.meal && setRandom(d.meal))
       .catch(() => {});
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     let filtered = allRecipes;
+    if (showFavouritesOnly) filtered = filtered.filter((m) => favourites.has(m.idMeal));
     if (category !== "All") filtered = filtered.filter((m) => m.strCategory === category);
     if (debouncedQuery.trim()) {
       const q = debouncedQuery.toLowerCase();
       filtered = filtered.filter((m) => m.strMeal.toLowerCase().includes(q));
     }
     setRecipes(filtered);
-  }, [debouncedQuery, category, allRecipes]);
+  }, [debouncedQuery, category, allRecipes, showFavouritesOnly, favourites]);
 
   const scrollToGrid = useCallback(() => {
     gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -256,11 +346,13 @@ export default function App() {
 
   const handleCategoryChange = (cat) => {
     setCategory(cat);
+    setShowFavouritesOnly(false);
     scrollToGrid();
   };
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
+    setShowFavouritesOnly(false);
     scrollToGrid();
   };
 
@@ -274,7 +366,12 @@ export default function App() {
     });
   };
 
-  if (!user) return <AuthPage onLogin={setUser} />;
+  const handleNeedAuth = () => setShowAuthPrompt(true);
+
+  // Show auth page (full screen)
+  if (authMode) {
+    return <AuthPage initialMode={authMode} onLogin={handleLogin} onBack={() => setAuthMode(null)} />;
+  }
 
   return (
     <div>
@@ -297,19 +394,45 @@ export default function App() {
               Surprise Me
             </button>
           )}
-          <button className="logout-btn" onClick={handleLogout}>Log out</button>
+
+          {user ? (
+            <>
+              <button
+                className={`favourites-btn${showFavouritesOnly ? " active" : ""}`}
+                onClick={() => { setShowFavouritesOnly((v) => !v); scrollToGrid(); }}
+                title="My Favourites"
+              >
+                ♥ Favourites
+                {favourites.size > 0 && (
+                  <span className="fav-count">{favourites.size}</span>
+                )}
+              </button>
+              <button className="logout-btn" onClick={handleLogout}>Log out</button>
+            </>
+          ) : (
+            <div className="auth-btns">
+              <button className="header-signin-btn" onClick={() => setAuthMode("login")}>
+                Sign In
+              </button>
+              <button className="header-signup-btn" onClick={() => setAuthMode("register")}>
+                Sign Up
+              </button>
+            </div>
+          )}
         </div>
         <div className="categories">
           {CATEGORIES.map((cat) => (
             <button
               key={cat}
-              className={`cat-btn${category === cat ? " active" : ""}`}
+              className={`cat-btn${category === cat && !showFavouritesOnly ? " active" : ""}`}
               onClick={() => handleCategoryChange(cat)}
             >
               {cat}
             </button>
           ))}
-          <span className="auth-welcome">Hi, {user.name}!</span>
+          {user && (
+            <span className="auth-welcome">Hi, {user.name}!</span>
+          )}
         </div>
       </header>
 
@@ -327,18 +450,35 @@ export default function App() {
         ) : (
           <>
             <p className="result-count">
-              {recipes.length} recipe{recipes.length !== 1 ? "s" : ""}
-              {category !== "All" ? ` in ${category}` : ""}
-              {debouncedQuery.trim() ? ` matching "${debouncedQuery}"` : ""}
+              {showFavouritesOnly ? `${recipes.length} favourite recipe${recipes.length !== 1 ? "s" : ""}` : (
+                <>
+                  {recipes.length} recipe{recipes.length !== 1 ? "s" : ""}
+                  {category !== "All" ? ` in ${category}` : ""}
+                  {debouncedQuery.trim() ? ` matching "${debouncedQuery}"` : ""}
+                </>
+              )}
             </p>
             <div className="grid">
               {recipes.map((meal, i) => (
-                <RecipeCard key={meal.idMeal} meal={meal} onClick={setSelectedMeal} index={i} />
+                <RecipeCard
+                  key={meal.idMeal}
+                  meal={meal}
+                  onClick={setSelectedMeal}
+                  index={i}
+                  user={user}
+                  favourites={favourites}
+                  onToggleFavourite={handleToggleFavourite}
+                  onNeedAuth={handleNeedAuth}
+                />
               ))}
             </div>
             {recipes.length === 0 && (
               <div className="empty">
-                <p className="empty-text">No recipes found. Try a different search!</p>
+                <p className="empty-text">
+                  {showFavouritesOnly
+                    ? "No favourites yet. Heart a recipe to save it here!"
+                    : "No recipes found. Try a different search!"}
+                </p>
               </div>
             )}
           </>
@@ -350,7 +490,21 @@ export default function App() {
       </footer>
 
       {selectedMeal && (
-        <Modal mealStub={selectedMeal} onClose={() => setSelectedMeal(null)} />
+        <Modal
+          mealStub={selectedMeal}
+          onClose={() => setSelectedMeal(null)}
+          user={user}
+          favourites={favourites}
+          onToggleFavourite={handleToggleFavourite}
+          onNeedAuth={handleNeedAuth}
+        />
+      )}
+
+      {showAuthPrompt && (
+        <AuthPrompt
+          onClose={() => setShowAuthPrompt(false)}
+          onGoAuth={(mode) => { setAuthMode(mode); setShowAuthPrompt(false); }}
+        />
       )}
 
       <ReyChat />
