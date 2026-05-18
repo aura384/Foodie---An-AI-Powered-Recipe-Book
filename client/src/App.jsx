@@ -262,7 +262,33 @@ export default function App() {
   });
 
   // null = main app, "login" or "register" = auth page
-  const [authMode, setAuthMode] = useState(null);
+  // Derive initial state from URL so hard refresh / direct links work
+  const [authMode, setAuthModeState] = useState(() => {
+    const p = window.location.pathname;
+    if (p === "/login") return "login";
+    if (p === "/register") return "register";
+    return null;
+  });
+
+  // Wrapper: update state AND push a history entry
+  const setAuthMode = useCallback((mode) => {
+    setAuthModeState(mode);
+    if (mode === "login")    window.history.pushState({ page: "login" },    "", "/login");
+    else if (mode === "register") window.history.pushState({ page: "register" }, "", "/register");
+    else                     window.history.pushState({ page: "home" },     "", "/");
+  }, []);
+
+  // Handle browser back/forward
+  useEffect(() => {
+    const onPop = (e) => {
+      const p = window.location.pathname;
+      if (p === "/login")    setAuthModeState("login");
+      else if (p === "/register") setAuthModeState("register");
+      else                   setAuthModeState(null);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   const [inputVal, setInputVal] = useState("");
@@ -288,7 +314,7 @@ export default function App() {
 
   const handleLogin = (userData) => {
     setUser(userData);
-    setAuthMode(null);
+    setAuthMode(null); // pushes history to "/"
   };
 
   const handleLogout = () => {
